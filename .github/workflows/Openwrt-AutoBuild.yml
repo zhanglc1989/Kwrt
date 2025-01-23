@@ -248,9 +248,15 @@ jobs:
     - name: Defconfig
       run: |
         cd openwrt
+       
 
         cat .config
 
+    - name: SSH connection to Actions
+      uses: kiddin9/debugger-action@master
+      if: contains(github.event.action, 'ssh')
+
+      
     - name: Cache
       uses: stupidloud/cachewrtbuild@main
       with:
@@ -268,9 +274,6 @@ jobs:
         fi
         df -hT
 
-    - name: SSH connection to Actions
-      uses: kiddin9/debugger-action@master
-      if: contains(github.event.action, 'ssh')
 
     - name: Compile the firmware
       id: compile
