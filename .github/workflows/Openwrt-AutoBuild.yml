@@ -276,9 +276,7 @@ jobs:
         fi
         df -hT
 
-    - name: SSH connection to Actions
-      uses: kiddin9/debugger-action@master
-      if: contains(github.event.action, 'ssh')
+
 
     - name: Compile the firmware
       id: compile
@@ -300,10 +298,15 @@ jobs:
         cd openwrt/bin/targets/*/*/
         cp $GITHUB_WORKSPACE/openwrt/.config ${{matrix.target}}.config || true
         cp $GITHUB_WORKSPACE/openwrt/build_dir/target-*/linux-*/linux-*/.config ${{matrix.target}}_kernel.config || true
-        rm -rf packages
+      
         Emoji=("🎉" "🤞" "✨" "🎁" "🎈" "🎄" "🎨" "💋" "🍓" "🍕" "🍉" "💐" "🌴" "🚀" "🛸" "🗽" "⛅" "🌈" "🔥" "⛄" "🐶" "🏅" "🦄" "🐤")
         echo "EMOJI=${Emoji[$[$RANDOM % ${#Emoji[@]}]]}" >> $GITHUB_ENV
 
+    - name: SSH connection to Actions
+      uses: kiddin9/debugger-action@master
+      if: contains(github.event.action, 'ssh')
+
+      
     - name: Deploy imagebuilder to server
       uses: easingthemes/ssh-deploy@main
       continue-on-error: true
