@@ -202,17 +202,29 @@ jobs:
           fi
           find "devices/${{matrix.target}}/patches" -maxdepth 1 -type f -name '*.revert.patch' -print0 | sort -z | xargs -I % -t -0 -n 1 sh -c "patch -d './' -R --no-backup-if-mismatch -p1 -F 1 --ignore-whitespace -i '%'"
           find "devices/${{matrix.target}}/patches" -maxdepth 1 -type f -name '*.patch' ! -name '*.revert.patch' ! -name '*.bin.patch' -print0 | sort -z | xargs -I % -t -0 -n 1 sh -c "patch -d './' --no-backup-if-mismatch -p1 -F 1 --ignore-whitespace -i '%'"
+    - name: Replace custom K2P DTS
+      if: matrix.target == 'ramips_mt7621'
+      run: |
+        test -f "$GITHUB_WORKSPACE/mt7621_phicomm_k2p.dts"
+        cp -f "$GITHUB_WORKSPACE/mt7621_phicomm_k2p.dts" \
+          "$GITHUB_WORKSPACE/openwrt/target/linux/ramips/dts/mt7621_phicomm_k2p.dts"
+        ls -l "$GITHUB_WORKSPACE/openwrt/target/linux/ramips/dts/mt7621_phicomm_k2p.dts"
 
     - name: Defconfig
       run: |
         cd openwrt
+        if [[ "${{matrix.target}}" == "ramips_mt7621" ]]; then
+          python3 -c 'from pathlib import Path; cfg=Path(".config"); lines=cfg.read_text(encoding="utf-8").splitlines(); enable={"CONFIG_TARGET_DEVICE_ramips_mt7621_DEVICE_phicomm_k2p","CONFIG_PACKAGE_kmod-mt7663-firmware-ap","CONFIG_PACKAGE_kmod-mt7663-firmware-sta","CONFIG_PACKAGE_kmod-mt7603"}; disable={"CONFIG_TARGET_MULTI_PROFILE","CONFIG_TARGET_ALL_PROFILES","CONFIG_TARGET_DEVICE_ramips_mt7621_DEVICE_phicomm_k2p-32m"}; managed=enable|disable; result=[line for line in lines if not any(line == f"# {key} is not set" or line.startswith(f"{key}=") for key in managed)]; result += [f"# {key} is not set" for key in sorted(disable)]; result += [f"{key}=y" for key in sorted(enable)]; cfg.write_text("\n".join(result) + "\n", encoding="utf-8")'
+          grep -E 'CONFIG_TARGET_MULTI_PROFILE|CONFIG_TARGET_ALL_PROFILES|CONFIG_TARGET_DEVICE_ramips_mt7621_DEVICE_phicomm_k2p|CONFIG_PACKAGE_kmod-mt7663-firmware|CONFIG_PACKAGE_kmod-mt7603' .config || true
+        fi
         make defconfig
         if [[ ! "${{matrix.target}}" =~ (amlogic_meson8b|armsr_armv8|bcm27xx_*|rockchip_armv8|sunxi_*|x86_*|siflower_*) ]]; then
         sed -n '/# Wireless Drivers/,/# end of Wireless Drivers/p' .config | sed -e 's/=m/=n/' >>.config
         sed -i "s/\(kmod-qca.*\)=m/\1=n/" .config
         make defconfig
         fi
-        cat .config
+        grep -E 'CONFIG_TARGET_MULTI_PROFILE|CONFIG_TARGET_ALL_PROFILES|CONFIG_TARGET_DEVICE_ramips_mt7621_DEVICE_phicomm_k2p|CONFIG_PACKAGE_kmod-mt7663-firmware|CONFIG_PACKAGE_kmod-mt7603' .config || true
+
 
     - name: Cache
       uses: stupidloud/cachewrtbuild@main
@@ -248,6 +260,11 @@ jobs:
         cp $GITHUB_WORKSPACE/openwrt/build_dir/target-*/linux-*/linux-*/.config ${{matrix.target}}_kernel.config || true
         Emoji=("🎉" "🤞" "✨" "🎁" "🎈" "🎄" "🎨" "💋" "🍓" "🍕" "🍉" "💐" "🌴" "🚀" "🛸" "🗽" "⛅" "🌈" "🔥" "⛄" "🐶" "🏅" "🦄" "🐤")
         echo "EMOJI=${Emoji[$[$RANDOM % ${#Emoji[@]}]]}" >> $GITHUB_ENV
+
+    - name: SSH connection to Actions
+      uses: kiddin9/debugger-action@master
+      if: contains(github.event.action, 'ssh')
+
 
     - name: Deploy imagebuilder to server
       uses: easingthemes/ssh-deploy@main
