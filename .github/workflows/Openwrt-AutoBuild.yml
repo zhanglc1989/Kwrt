@@ -203,6 +203,15 @@ jobs:
           find "devices/${{matrix.target}}/patches" -maxdepth 1 -type f -name '*.revert.patch' -print0 | sort -z | xargs -I % -t -0 -n 1 sh -c "patch -d './' -R --no-backup-if-mismatch -p1 -F 1 --ignore-whitespace -i '%'"
           find "devices/${{matrix.target}}/patches" -maxdepth 1 -type f -name '*.patch' ! -name '*.revert.patch' ! -name '*.bin.patch' -print0 | sort -z | xargs -I % -t -0 -n 1 sh -c "patch -d './' --no-backup-if-mismatch -p1 -F 1 --ignore-whitespace -i '%'"
 
+    - name: Replace custom K2P DTS
+      if: matrix.target == 'ramips_mt7621'
+      run: |
+        test -f "$GITHUB_WORKSPACE/mt7621_phicomm_k2p.dts"
+        cp -f "$GITHUB_WORKSPACE/mt7621_phicomm_k2p.dts" \
+          "$GITHUB_WORKSPACE/openwrt/target/linux/ramips/dts/mt7621_phicomm_k2p.dts"
+        ls -l "$GITHUB_WORKSPACE/openwrt/target/linux/ramips/dts/mt7621_phicomm_k2p.dts"
+
+
     - name: Defconfig
       run: |
         cd openwrt
@@ -246,6 +255,8 @@ jobs:
         cd openwrt/bin/targets/*/*/
         cp $GITHUB_WORKSPACE/openwrt/.config ${{matrix.target}}.config || true
         cp $GITHUB_WORKSPACE/openwrt/build_dir/target-*/linux-*/linux-*/.config ${{matrix.target}}_kernel.config || true
+        rm -rf !(*.config|*.bin|*.buildinfo)        
+       
         Emoji=("🎉" "🤞" "✨" "🎁" "🎈" "🎄" "🎨" "💋" "🍓" "🍕" "🍉" "💐" "🌴" "🚀" "🛸" "🗽" "⛅" "🌈" "🔥" "⛄" "🐶" "🏅" "🦄" "🐤")
         echo "EMOJI=${Emoji[$[$RANDOM % ${#Emoji[@]}]]}" >> $GITHUB_ENV
 
