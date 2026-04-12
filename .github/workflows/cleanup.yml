@@ -1,4 +1,4 @@
-name: 清理 Actions 运行记录
+name: 清理Actions运行记录
 on:
   workflow_dispatch:
     inputs:
@@ -13,7 +13,7 @@ on:
           - '2'
           - '3'
       runner_filter:
-        description: 'Runner 范围：Repo / 其他所有'
+        description: 'Repo=只删Repo 其他=删非Repo'
         required: true
         type: choice
         options:
@@ -26,11 +26,10 @@ jobs:
     permissions:
       actions: write
     steps:
-      - name: 清理符合条件的运行记录
+      - name: 清理记录
         uses: Mattraks/delete-workflow-runs@v2
         with:
           token: ${{ github.token }}
           retain_days: 0
           keep_minimum_runs: 0
-          delete_run_by_conclusion_pattern: ${{ inputs.clean_type == '0' && '' || inputs.clean_type == '1' && 'failure' || inputs.clean_type == '2' && 'cancelled' || inputs.clean_type == '3' && 'failure,cancelled' }}
           dry_run: false
