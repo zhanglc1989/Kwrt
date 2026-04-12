@@ -1,18 +1,45 @@
-name: 清理失败的 Actions Run
+name: 清理 Actions 运行记录
 on:
-  workflow_dispatch:  # 手动触发（你要的就是这个）
+  workflow_dispatch:
+    inputs:
+      clean_type:
+        description: '删除类型：0=全部 1=失败 2=取消 3=失败+取消'
+        required: true
+        default: '1'
+        type: choice
+        options:
+          - '0'
+          - '1'
+          - '2'
+          - '3'
+      runner_group:
+        description: '选择 runner 类型：Repo / 其他所有'
+        required: true
+        type: choice
+        options:
+          - 'Repo'
+          - '其他所有'
 
 jobs:
   clean:
     runs-on: ubuntu-latest
     permissions:
-      actions: write  # 必须给删除权限
+      actions: write
     steps:
-      - name: 删除所有失败的 run
+      - name: 清理 workflow runs
         uses: Mattraks/delete-workflow-runs@v2
         with:
           token: ${{ github.token }}
-          retain_days: 0          # 不按时间过滤，只按状态
-          keep_minimum_runs: 0    # 可以全部删  保留最近 N 条，其余全删
-          delete_run_by_conclusion_pattern: failure,cancelled  # 删失败+取消  改为0删除所有
-          dry_run: false          # 真正执行删除
+          retain_days: 0
+          keep_minimum_runs: 0
+          delete_run_by_conclusion_pattern: ${{
+            inputs.clean_type == '0' && '' ||
+            inputs.clean_type == '1' && 'failure' ||
+            inputs.clean_type == '2' && 'cancelled' ||
+            inputs.clean_type == '3' && 'failure,cancelled'
+          }}
+          delete_run_by_owner: ''
+          delete_run_by_repo: ''
+          delete_run_by_workflow: ''
+          delete_run_by_runner_group: ${{ inputs.runner_group }}
+          dry_run: false
