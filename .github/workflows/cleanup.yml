@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       clean_type:
-        description: '删除类型：0=全部 1=失败 2=取消 3=失败+取消'
+        description: '0=全部 1=失败 2=取消 3=失败+取消'
         required: true
         default: '1'
         type: choice
@@ -12,8 +12,8 @@ on:
           - '1'
           - '2'
           - '3'
-      runner_group:
-        description: '选择 runner 类型：Repo / 其他所有'
+      runner_filter:
+        description: 'Runner 范围：Repo / 其他所有'
         required: true
         type: choice
         options:
@@ -26,20 +26,11 @@ jobs:
     permissions:
       actions: write
     steps:
-      - name: 清理 workflow runs
+      - name: 清理符合条件的运行记录
         uses: Mattraks/delete-workflow-runs@v2
         with:
           token: ${{ github.token }}
           retain_days: 0
           keep_minimum_runs: 0
-          delete_run_by_conclusion_pattern: ${{
-            inputs.clean_type == '0' && '' ||
-            inputs.clean_type == '1' && 'failure' ||
-            inputs.clean_type == '2' && 'cancelled' ||
-            inputs.clean_type == '3' && 'failure,cancelled'
-          }}
-          delete_run_by_owner: ''
-          delete_run_by_repo: ''
-          delete_run_by_workflow: ''
-          delete_run_by_runner_group: ${{ inputs.runner_group }}
+          delete_run_by_conclusion_pattern: ${{ inputs.clean_type == '0' && '' || inputs.clean_type == '1' && 'failure' || inputs.clean_type == '2' && 'cancelled' || inputs.clean_type == '3' && 'failure,cancelled' }}
           dry_run: false
