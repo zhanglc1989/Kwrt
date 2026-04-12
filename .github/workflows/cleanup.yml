@@ -1,0 +1,18 @@
+name: 清理失败的 Actions Run
+on:
+  workflow_dispatch:  # 手动触发（你要的就是这个）
+
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write  # 必须给删除权限
+    steps:
+      - name: 删除所有失败的 run
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          retain_days: 0          # 不按时间过滤，只按状态
+          keep_minimum_runs: 0    # 可以全部删  保留最近 N 条，其余全删
+          delete_run_by_conclusion_pattern: failure,cancelled  # 删失败+取消  改为0删除所有
+          dry_run: false          # 真正执行删除
